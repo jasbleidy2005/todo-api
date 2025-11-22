@@ -1,2 +1,6 @@
-exclude_dirs: /tests/,/venv/,/env/
-skips: ['B101']
+exclude_dirs:
+  - /tests/
+  - /venv/
+  - /env/
+skips:
+  - B101
