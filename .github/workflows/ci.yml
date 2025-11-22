@@ -1,0 +1,90 @@
+name: CI/CD Pipeline - ToDo API
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-and-analyze:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: admin123
+          POSTGRES_DB: tasks_management_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run unit tests
+      env:
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        DATABASE_NAME: tasks_management_db
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: admin123
+      run: |
+        echo "Ejecutando pruebas unitarias..."
+        pytest tests/unit/ -v --tb=short
+    
+    - name: Run integration tests
+      env:
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        DATABASE_NAME: tasks_management_db
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: admin123
+      run: |
+        echo "Ejecutando pruebas de integración..."
+        pytest tests/integration/ -v --tb=short
+    
+    - name: Run E2E tests
+      env:
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        DATABASE_NAME: tasks_management_db
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: admin123
+      run: |
+        echo "Ejecutando prueba E2E..."
+        pytest tests/e2e/ -v --tb=short
+    
+    - name: Run static analysis with Bandit
+      run: |
+        echo "Ejecutando análisis estático de seguridad..."
+        bandit -r src/ -c .bandit
+    
+    - name: All tests passed
+      if: success()
+      run: |
+        echo "         OK"
+
+    
+    - name: Tests failed
+      if: failure()
+      run: | 
+        echo "       FAILED"
+        exit 1
